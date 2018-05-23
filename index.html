@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Resume Data REST API</title>  
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+</head>
+
+<body>
+    <div class="container">
+        <br>
+<h1 >Resume Data REST API</h1>         
+            <p><h4>Third Party OAuth 2.0 Authentication:</h4>
+<p>This API uses Google OAuth 2.0 for authentication. Visit the base URL listed below to obtain a valid token. Upon making an initial request to the API with a valid token, a user account will be created automatically.</p>
+
+<p>For most requests, the token must be included in the header as follows:
+Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”
+
+If one makes a GET request to a resume which has its “public” property set to true, no token is required to allow the resume to be shareable. All other requests require a valid token.</p>
+                     <div style="text-align:center"><a href="{{link}}" class="btn btn-outline-primary">Click here to obtain a token</a> </div>   
+
+
+<h4>Entities:</h4>
+<h5>User:</h5>
+&nbsp;&nbsp;<u>email (String):</u> Set by OAuth process.<br>
+&nbsp;&nbsp;<u>name (String):</u> Set by OAuth process.<br>
+&nbsp;&nbsp;<u>phone (String):</u> User can update, null otherwise.<br>
+&nbsp;&nbsp;<u>resume_documents (Array of strings):</u> stores urlsafe IDs of resume entities associated with user account.<br><br>
+    
+<h5>Experience:</h5>
+&nbsp;&nbsp;<u>position_title (String):</u> Official title held in position, cannot be null.<br>
+&nbsp;&nbsp;<u>organization (String):</u> Official organization name where experience occurred, cannot be null.<br>
+&nbsp;&nbsp;<u>location (String):</u> Location where experience was based. Cannot be null.<br>
+&nbsp;&nbsp;<u>start_date (String):</u> Date when experience began. Required format: “YYYY-MM-DD.” Cannot be null.<br>
+&nbsp;&nbsp;<u>end_date (String):</u> Date when experience ended. Required format: “YYYY-MM-DD.” May be null.<br>
+&nbsp;&nbsp;<u>type (String):</u> Describes type of experience. Ex. “Professional,” “Education,” “Volunteer.”<br>
+&nbsp;&nbsp;<u>description (String):</u> An explanation of the experience.<br>
+&nbsp;&nbsp;<u>user_id (String):</u> Urlsafe ID of user who created and owns this experience. May not be set by user, automatically set by API.<br><br>
+
+<h5>Resume:</h5>
+&nbsp;&nbsp;<u>title (String):</u> Resume title. Ex. “General Resume” or “Google Resume”<br>
+&nbsp;&nbsp;<u>public (Boolean):</u> indicates whether resume is publicly available or not. If true, it may be viewed without use of a token. If false, only the user who created the resume document may view it. <br>
+&nbsp;&nbsp;<u>experience (Array of strings):</u> a list of urlsafe IDs for experiences that will be displayed on this resume. May contain experience IDs on other resumes.<br>
+&nbsp;&nbsp;<u>skills (Array of strings):</u> a list of skills to be shown on the resume.<br>
+&nbsp;&nbsp;<u>user_id (String):</u> Urlsafe ID of user who created and owns this experience. May not be set by user, automatically set by API.<br><br>
+
+
+<h4>Endpoints:</h4>
+
+<h5>GET /user</h5><p>
+Returns a JSON object containing the user’s details. Must include valid Google OAuth 2.0 token under Authorization header (ex. Authorization: Bearer abc123)
+</p>
+
+<h5>GET /user/:id</h5><p>
+Returns a JSON object containing the user’s details. Must include valid Google OAuth 2.0 token under Authorization header (ex. Authorization: “Bearer abc123”). Account Id must match user associated with OAuth token.
+</p>
+<p>
+<h5>PATCH /user/:id</h5><p>
+Update phone number affiliated with user account (only). Note, name and email address properties are set by OAuth authentication process and may not be modified. 
+
+Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”</p>
+<pre>
+Format body as follows:
+{
+	“phone”: “555-555-5555”
+}
+</pre>
+
+<h5>GET /experience</h5><p>
+Returns an array of experiences owned by the user account associated with the included token. Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”
+</p>
+
+<h5>GET /experience/:id</h5> <p>
+Returns a specific experience identified by the id included in the URL. Owner of experience must be same as the account associated with the included token. Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”
+</p>
+
+<h5>POST /experience</h5>  <p>
+Creates a new experience owned by the user account associated with the included token. Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”</p>
+<pre>
+Format body as follows:
+{
+	“position_title”: “REST API Developer”,
+	“organization”: “Big Software, Inc.”,
+	“location”: “Seattle, WA”,
+	“description”: “Develops and maintains REST APIs.”
+	“type”: “Professional”
+	“start_date”: “2018-01-01”,
+	“end_date”: null,
+}</pre>
+
+
+<h5>PATCH /experience/:id </h5> <p>
+Updates a single or multiple properties of the experience identified by the id in the URL. Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123” </p>
+<pre>
+Format body as follows:
+{
+	“end_date”:”2020-12-01”,
+	“position_title”: “Project Manager”
+}
+</pre>
+
+<h5>PUT /experience/:id</h5><p>
+Replaces the experience identified by the id in the URL. Must include all property names in body. Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”</p>
+
+<pre>
+Format body as follows:
+{
+	“position_title”: “Student”,
+	“organization”: “Oregon State University”,
+	“location”: “Corvallis, OR”,
+	“description”: “Bachelor of Science in Computer Science”
+	“type”: “Education”
+	“start_date”: “2017-01-06”,
+	“end_date”: “2018-03-21”,
+}</pre>
+
+<h5>DELETE /experience/:id</h5>   <p>
+Completely deletes the experience identified by the id in the URL. If the experience is included on any resume documents, it will be removed automatically. Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”
+</p>
+
+<h5>GET /resume  </h5>    <p>
+Returns an array of resumes owned by the user account associated with the included token. Note that for each resume the experiences property will be replaced by the full experience entity identified by the urlsafe identifiers in the resume’s experiences array. Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”
+</p>
+
+<h5>GET /resume/:id </h5>  <p>
+Returns a specific resume owned by the user account associated with the included token. Note that the experiences property will be replaced by an array of full experience objects identified by the urlsafe identifiers in the resume’s experiences array. If the “public” property is true, the resume will be accessible without an OAuth token, otherwise it is required to include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”
+</p>
+
+<h5>POST /resume  </h5>   <p>
+Creates a new resume document and automatically adds the urlsafe identifier for the resume to the user’s resume_documents property. Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”</p>
+
+<pre>
+Format body as follows:
+{
+	“title”: “Web Development Resume”,
+	“experiences”: [“xyz123”, “zyx321”],
+	“skills”: [“JavaScript”, “Python”, “Webapp2”],
+	“public”: false
+}
+</pre>
+        
+<h5>PATCH /resume/:id</h5><p>
+Updates a single or multiple properties of the resume identified by the id in the URL. Note that any updates to the experiences or skills arrays will be appended to existing values. Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”</p>
+<pre>
+Format body as follows:
+{
+	“title”: “Backend Web Development Resume”,
+	“experiences”: [“321cba”, “321abc”],
+}</pre>
+
+
+<h5>PUT /resume/:id  </h5>  <p>
+Replaces the resume identified by the id in the URL. Note, existing values in the experiences and skills arrays will be completely replaced.  Must include all property names in the request body. Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”</p>
+<pre>
+Format body as follows:
+{
+	“title”: “Project Manager Resume”,
+	“experiences”: [“321zyx”, “321xyz”],
+	“skills”: [“Team management”, “Cost management”],
+	“public”: true
+}</pre>
+
+
+<h5>DELETE /resume/:id </h5>  <p>
+Completely deletes the resume identified by the id in the URL and removes the urlsafe identifier from the user’s resume_documents property. Note, this will not delete any experiences that may have been in the resume’s experiences array. Must include authorization header with valid Google OAuth 2.0 token. Ex. Authorization: “Bearer abc123”
+</p>
+
+
+</div>
+   </body>
+</html>
