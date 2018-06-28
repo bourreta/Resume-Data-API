@@ -1,13 +1,7 @@
-'''
-Resources:
-https://cloud.google.com/appengine/docs/standard/python/issue-requests
-http://webapp2.readthedocs.io/en/latest/tutorials/gettingstarted/templates.html
-https://stackoverflow.com/questions/12934427/access-uri-parameters-via-webapp2
-https://getbootstrap.com/docs/4.0/getting-started/introduction/
-https://stackoverflow.com/questions/16870663/how-do-i-validate-a-date-string-format-in-python
-https://stackoverflow.com/questions/1835018/how-to-check-if-an-object-is-a-list-or-tuple-but-not-string
-Beaver image is used under CC0 creative commons license
-'''
+
+import sys
+sys.path.insert(0, 'libs')
+import rda_keys
 from google.appengine.ext import ndb
 from google.appengine.api import urlfetch
 import urllib
@@ -22,22 +16,24 @@ import types
 import json
 import datetime
 
-client_id = "124190005088-lf4td4v73lgpfj5q9p3qi81rcjqff01s.apps.googleusercontent.com"
-client_secret = "97VMqbv_lDl9f_IhfhMC6fIW"
-#redirect_uri = "https://cs496-oauth-bourreta.appspot.com/oauth"
-redirect_uri = "https://resumedataapi.appspot.com/oauth"
-scope = "email"
-get_token_url = "https://www.googleapis.com/oauth2/v4/token"
-google_plus_url = "https://www.googleapis.com/plus/v1/people/me"
-BASE_URL = "https://resumedataapi.appspot.com"
 INVALID_TOKEN_ERROR = "Invalid token: acquire new token at "
 
+#Setup authorization variables
+client_id = rda_keys.client_id
+client_secret = rda_keys.client_secret
+redirect_uri = rda_keys.redirect_uri
+scope = rda_keys.scope
+get_token_url = rda_keys.get_token_url
+google_plus_url = rda_keys.google_plus_url
+BASE_URL = rda_keys.BASE_URL
+
+#User Model
 class User(ndb.Model):
     name = ndb.StringProperty(required=True)
     email = ndb.StringProperty(required=True)
     resume_documents = ndb.StringProperty(repeated=True)
     phone = ndb.StringProperty()
-
+#Resume Model
 class Resume(ndb.Model):
     title = ndb.StringProperty(required=True)
     experience = ndb.StringProperty(repeated=True)
@@ -45,7 +41,7 @@ class Resume(ndb.Model):
     public = ndb.BooleanProperty(required=True)
     date_modified = ndb.DateProperty()
     user_id = ndb.StringProperty()
-
+#Experience Model
 class Experience(ndb.Model):
     position_title = ndb.StringProperty(required=True)
     organization = ndb.StringProperty()
@@ -55,7 +51,7 @@ class Experience(ndb.Model):
     end_date = ndb.DateProperty()
     description = ndb.TextProperty()
     user_id = ndb.StringProperty()
-
+# Help functions
 def send_error(self, status_code, message):
     self.response.status = status_code
     self.response.write("ERROR: " + message)
@@ -77,6 +73,8 @@ def check_date(datestring):
             return False
         return True
 
+# Check if token is valid
+# Return boolean true/false, dict with user info
 def check_token(headers):
     if not headers.has_key('authorization'):
         return False, None
@@ -103,8 +101,10 @@ def check_token(headers):
             return True, new_user
     else:
         return False, None
-
+# Routes Handlers
+# Handle User requests
 class UserHandler(webapp2.RequestHandler):
+# Get user
     def get(self, id=None):
         token_is_valid, user_data = check_token(self.request.headers)
 
@@ -125,7 +125,7 @@ class UserHandler(webapp2.RequestHandler):
         else:
             send_error(self, 401, INVALID_TOKEN_ERROR + BASE_URL)
             return
-
+# Update user
     def patch(self, id=None):
         token_is_valid, user_data = check_token(self.request.headers)
         if token_is_valid:
@@ -165,7 +165,7 @@ class UserHandler(webapp2.RequestHandler):
         else:
             send_error(self, 401, INVALID_TOKEN_ERROR + BASE_URL)
             return
-
+# Handle experience requests
 class ExperienceHandler(webapp2.RequestHandler):
     def get(self, id=None):
         token_is_valid, user_data = check_token(self.request.headers)
@@ -205,7 +205,7 @@ class ExperienceHandler(webapp2.RequestHandler):
         else:
             send_error(self, 401, INVALID_TOKEN_ERROR + BASE_URL)
             return
-    
+# Create new experience
     def post(self, id=None):
         token_is_valid, user_data = check_token(self.request.headers)
         if not id:
@@ -248,7 +248,7 @@ class ExperienceHandler(webapp2.RequestHandler):
         else:
             send_error(self, 404, "Not found. Visit " + BASE_URL + "for documentation.")
             return
-            
+# Update an experience
     def patch(self, id=None):
         token_is_valid, user_data = check_token(self.request.headers)
         if not token_is_valid:
@@ -265,7 +265,7 @@ class ExperienceHandler(webapp2.RequestHandler):
             except (ValueError, ProtocolBufferDecodeError):
                 send_error(self, 404, "Not found. Visit " + BASE_URL + "for documentation.")
                 return
-
+            # Validation
             data_is_good = True
             if experience_patch_data.has_key('position_title'):
                 if isinstance(experience_patch_data['position_title'], basestring):
@@ -322,7 +322,7 @@ class ExperienceHandler(webapp2.RequestHandler):
         else:
             send_error(self, 404, "Not found. Visit " + BASE_URL + "for documentation.")
             return
-                
+# Update a single item of an experience
     def put(self, id=None):
         token_is_valid, user_data = check_token(self.request.headers)
         if id:
@@ -380,7 +380,7 @@ class ExperienceHandler(webapp2.RequestHandler):
         else:
             send_error(self, 404, "Not found. Visit " + BASE_URL + " for documentation.")
             return
-                
+# Delete experience
     def delete(self, id=None):
         token_is_valid, user_data = check_token(self.request.headers)
         if not token_is_valid:
@@ -400,7 +400,7 @@ class ExperienceHandler(webapp2.RequestHandler):
             if user.key.urlsafe() != user_data.key.urlsafe():
                 send_error(self, 403, "Forbidden. Visit " + BASE_URL + " for documentation.")
                 return
-
+            # Remove from existing resumes
             resumes = Resume.query(Resume.user_id == user_data.key.urlsafe()).fetch()
 
             for i in range(0, len(resumes)):
@@ -414,7 +414,7 @@ class ExperienceHandler(webapp2.RequestHandler):
         else:
             send_error(self, 404, "Not found. Visit " + BASE_URL + "for documentation.")
             return
-
+# Handle resume requests
 class ResumeHandler(webapp2.RequestHandler):
     def get(self, id=None):
         
@@ -424,7 +424,6 @@ class ResumeHandler(webapp2.RequestHandler):
             try:
                 resume = ndb.Key(urlsafe=id).get()
                 user = ndb.Key(urlsafe=resume.user_id).get()
-            # (ProtocolBufferDecodeError, TypeError, AttributeError)
             except:
                 send_error(self, 404, "Not found. Visit " + BASE_URL + " for documentation.")
                 return
@@ -490,7 +489,7 @@ class ResumeHandler(webapp2.RequestHandler):
             else:
                 send_error(self, 401, INVALID_TOKEN_ERROR + BASE_URL)
                 return
-
+# Create a resume
     def post(self, id=None):
         token_is_valid, user_data = check_token(self.request.headers)
         if token_is_valid:
@@ -531,7 +530,7 @@ class ResumeHandler(webapp2.RequestHandler):
     
         else:
             send_error(self, 401, INVALID_TOKEN_ERROR + BASE_URL)
-
+# Update single item on resume
     def put(self, id=None):
         token_is_valid, user_data = check_token(self.request.headers)
         if id:
@@ -597,7 +596,7 @@ class ResumeHandler(webapp2.RequestHandler):
         else:
             send_error(self, 404, "Not found. Visit " + BASE_URL + " for documentation.")
             return
-    
+#Update an entire resume
     def patch(self, id=None):
         token_is_valid, user_data = check_token(self.request.headers)
         if token_is_valid:
@@ -669,7 +668,7 @@ class ResumeHandler(webapp2.RequestHandler):
         else:
             send_error(self, 401, INVALID_TOKEN_ERROR + BASE_URL)
             return
-
+#delete a resume
     def delete(self, id=None):
         token_is_valid, user_data = check_token(self.request.headers)
         if token_is_valid:
@@ -699,7 +698,7 @@ class ResumeHandler(webapp2.RequestHandler):
         else:
             send_error(self, 401, INVALID_TOKEN_ERROR + BASE_URL)
             return
-
+# Handle authorization, helping user obtain token
 class OauthHandler(webapp2.RequestHandler):
     def get(self):
         
@@ -730,14 +729,16 @@ class OauthHandler(webapp2.RequestHandler):
         google_plus_info = json.loads(get_result.content)
         template_values = {
             "name": google_plus_info["displayName"],
-            "g_plus_url": google_plus_info["url"],
             "token": token_data["access_token"]
         }
+        
+        if (google_plus_info.has_key('url')):
+            template_values["g_plus_url"] = google_plus_info["url"]
 
         path = os.path.join(os.path.dirname(__file__), 'result.html')
         self.response.out.write(template.render(path,template_values))
 
-
+# Main documentation page
 class MainPage(webapp2.RequestHandler):
     def get(self):
         state = ""
@@ -755,6 +756,7 @@ allowed_methods = webapp2.WSGIApplication.allowed_methods
 new_allowed_methods = allowed_methods.union(('PATCH',))
 webapp2.WSGIApplication.allowed_methods = new_allowed_methods
 
+# Routes
 app = webapp2.WSGIApplication([
     ('/', MainPage),
     ('/oauth', OauthHandler),
